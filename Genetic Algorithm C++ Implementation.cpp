@@ -25,7 +25,7 @@ long long llrand() {
 class Chromosome {
 	typedef unsigned long long chtype;
 	typedef long unsigned int size_t;
-	static const int mutation_rate = 2;	// value from 0 to 64 determines the rate of bit changes (set to low rate)
+	static const int mutation_rate;	// value from 0 to 64 determines the rate of bit changes (set to low rate 1)
 	chtype data;
 	size_t _size;
 public:
@@ -156,7 +156,13 @@ public:
 			fitness += other[i] == target[i];
 		return fitness;
 	}
-	static int calc_fitness(Population::iterator begin, Population::iterator end, const function<bool(int,int)>& cmp = less<int>()) {
+	static int calc_fitness(Population::iterator begin, Population::iterator end) {
+		int ret = 0;
+		while(begin != end)
+			ret += calc_fitness(*(begin++));
+		return ret;
+	}
+	static int calc_max_fitness(Population::iterator begin, Population::iterator end, const function<bool(int,int)>& cmp = less<int>()) {
 		// returns maximum fitness in range
 		if(begin == end)
 			return 0;
@@ -185,9 +191,9 @@ public:
 };
 // Genetic Algorithm Class Implementation
 class GN {
-	static const bool elitism = true;
-	static const int crossover_rate = 32; // value from 0 to 64 determines the rate of bit swapping in crossover (set to uniform rate)
-	static const int counter_limit = 30;
+	static const bool elitism;
+	static const int crossover_rate; // value from 0 to 64 determines the rate of bit swapping in crossover (set to uniform rate 32)
+	static const size_t counter_limit;
 	
 public:
 	Population generation; // current population
@@ -226,6 +232,17 @@ public:
 			child.set(i, ((rand() & 63) < crossover_rate ? parent1[i] : parent2[i]));
 		return child;
 	}
+	void crossover(const Chromosome& parent1, const Chromosome& parent2, Chromosome& child1, Chromosome& child2) {
+		for(size_t i = 0; i < parent1.size(); ++i)
+			if((rand() & 63) < crossover_rate) {
+				child1.set(i, parent2[i]);
+				child2.set(i, parent1[i]);
+			}
+			else {
+				child1.set(i, parent1[i]);
+				child2.set(i, parent2[i]);
+			}
+	}
 	void evolve() {
 		Population new_generation(generation);
 		if(elitism) {
@@ -239,32 +256,65 @@ public:
 		}
 		generation = new_generation;
 	}
+	// another evolve function which uses relative fitness (to the sum) to pair the parents together
+	void evolve2() {
+		Population new_generation(generation);
+		int fitness_sum = Fitness::calc_fitness(generation.begin(), generation.end());
+		Population::iterator shuffled[generation.size() * 2];
+		size_t sz = 0;
+		for(size_t i = 0; i < generation.size(); ++i) {
+			// this expression is equivalent to : occurrences = ceil(fitness[i] / fitness_avg)
+			int occurrences = (Fitness::calc_fitness(generation[i]) * generation.size() + fitness_sum - 1) / fitness_sum;
+			while(occurrences--)
+				shuffled[sz++] = generation.begin() + i;
+		}
+		random_shuffle(shuffled, shuffled + sz);
+		if(generation.size() & 1) {
+			new_generation[0] = *Fitness::get_fittest(generation.begin(), generation.end());
+		}
+		for(size_t i = generation.size() & 1; i < generation.size(); i += 2) {
+			crossover(*shuffled[i], *shuffled[i + 1], new_generation[i], new_generation[i + 1]);
+			new_generation[i].mutate();
+			new_generation[i + 1].mutate();
+		}
+		int current_fitness = Fitness::calc_max_fitness(generation.begin(), generation.end());
+		int new_fitness = Fitness::calc_max_fitness(new_generation.begin(), new_generation.end());
+		if(current_fitness <= new_fitness)
+			generation = new_generation;
+		
+	}
 	void converge() {
 		size_t generation_id = 0;
-		int max_fitness = Fitness::calc_fitness(generation.begin(), generation.end());
+		int max_fitness = Fitness::calc_max_fitness(generation.begin(), generation.end());
 		int target_fitness = Fitness::calc_fitness(Fitness::target);
-		cout <<"Generation "<< generation_id << endl;// << ":" << endl << generation << endl;
+		cout <<"Generation "<< generation_id << endl;
 		cout <<"Fitness = " << max_fitness << endl << endl;
 		while(counter < counter_limit && max_fitness != target_fitness) {
 			++generation_id;
-			evolve();
-			int new_fitness = Fitness::calc_fitness(generation.begin(), generation.end());
+			//evolve();
+			evolve2();
+			int new_fitness = Fitness::calc_max_fitness(generation.begin(), generation.end());
 			if(max_fitness == new_fitness)
 				++counter;
 			else {
 				counter = 0;
 				max_fitness = new_fitness;
 			}
-			cout <<"Generation "<< generation_id << endl;// << ":" << endl << generation << endl;
+			cout <<"Generation "<< generation_id << endl;
 			cout <<"Fitness = " << max_fitness << endl << endl;
 		}
 	}
 	
 };
+const bool GN::elitism = true;
+const int GN::crossover_rate = 32;
+const size_t GN::counter_limit = 1000;
+const int Chromosome::mutation_rate = 1;
 Chromosome Fitness::target = Chromosome(64, 0xf00000000000000f);
+
 int main() {
 	srand(time(NULL));
-	GN test(Population(50, Chromosome(64), true));
+	GN test(Population(51, Chromosome(64), true));
 	test.converge();
 	return 0;
 }
