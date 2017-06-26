@@ -45,11 +45,11 @@ public:
     static const int block_log = static_log2<block_bits>::value;
     static const int npos = -1;
 
-    dynamic_bitset() : bits_size(0) {}
-    dynamic_bitset(size_type ubits_size, bool val = false) : bits_size(ubits_size) ,blocks(container_type ((bits_size + block_bits - 1) >> block_log, val)) {
+    explicit dynamic_bitset() : bits_size(0) {}
+    explicit dynamic_bitset(size_type ubits_size, bool val = false) : bits_size(ubits_size) ,blocks(container_type ((bits_size + block_bits - 1) >> block_log, val)) {
         if(val) fix_last_block();
     }
-    dynamic_bitset(const string& digits) {
+    explicit dynamic_bitset(const string& digits) {
         // could be binary of hexadecimal digits
         if(digits.size() > 1 && (digits[1] == 'x' || digits[1] == 'X'))
             init_hexa(digits);
