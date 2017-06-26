@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <typeinfo>
 #include <functional>
+#include <fstream>
 using namespace std;
 class Chromosome;
 class Fitness;
@@ -25,22 +26,21 @@ long long llrand() {
 class Chromosome {
 	typedef unsigned long long chtype;
 	typedef long unsigned int size_t;
-	static const int mutation_rate;	// value from 0 to 64 determines the rate of bit changes (set to low rate 1)
+	static const int mutation_rate;
 	chtype data;
 	size_t _size;
 public:
-	static const size_t MAXSIZE = 64;
-	
+	static const size_t MAX_CHROMO_SIZE;
 	inline size_t size() const{
 		return _size;
 	}
 	Chromosome(const string& bits) {
 		data = 0;
-		_size = min(bits.size(), MAXSIZE);
+		_size = min(bits.size(), MAX_CHROMO_SIZE);
 		for(size_t i = 0; i < _size; ++i)
 			data |= (chtype)(bits[i] - '0') << (_size - i - 1);
 	}
-	Chromosome(size_t usize = MAXSIZE, const chtype& bits = 0) : data(bits), _size(min(usize, (size_t)MAXSIZE)) {}
+	Chromosome(size_t usize = MAX_CHROMO_SIZE, const chtype& bits = 0) : data(bits), _size(min(usize, (size_t)MAX_CHROMO_SIZE)) {}
 	Chromosome& operator = (const Chromosome& other) {
 		data = other.data;
 		_size = other._size;
@@ -149,6 +149,9 @@ public:
 class Fitness {
 public:
 	static Chromosome target;
+	static void set_target(const Chromosome& utarget) {
+		target = utarget;
+	}
 	
 	static int calc_fitness(const Chromosome& other) {
 		int fitness = 0;
@@ -192,7 +195,7 @@ public:
 // Genetic Algorithm Class Implementation
 class GN {
 	static const bool elitism;
-	static const int crossover_rate; // value from 0 to 64 determines the rate of bit swapping in crossover (set to uniform rate 32)
+	static const int crossover_rate;
 	static const size_t counter_limit;
 	
 public:
@@ -306,13 +309,22 @@ public:
 	}
 	
 };
-const bool GN::elitism = true;
-const int GN::crossover_rate = 32;
-const size_t GN::counter_limit = 1000;
-const int Chromosome::mutation_rate = 1;
-Chromosome Fitness::target = Chromosome(64, 0xf00000000000000f);
 
+//void Fitness::set_target(const Chromosome& utarget) {
+//	Fitness::target = utarget;
+//}
+
+const bool GN::elitism = true;
+const int GN::crossover_rate = 32; // value from 0 to 64 determines the rate of bit swapping in crossover (set to uniform rate 32)
+const size_t GN::counter_limit = 1000;
+const int Chromosome::mutation_rate = 1; // value from 0 to 64 determines the rate of bit changes (set to low rate 1)
+const size_t Chromosome::MAX_CHROMO_SIZE = 64;
+Chromosome Fitness::target = Chromosome();
+ifstream fin("input.txt");
+ofstream fout("output.txt");
+ofstream flog("log.txt");
 int main() {
+	Fitness::set_target(Chromosome(64, 0xf00000000000000f));
 	srand(time(NULL));
 	GN test(Population(51, Chromosome(64), true));
 	test.converge();
