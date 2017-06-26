@@ -411,7 +411,7 @@ private:
     static const block_type all_on = ~block_type(0);
 
     size_type bits_size;
-    vector<block_type> blocks;
+    vector<block_type, allocator_type> blocks;
 
 
     char hexa_val(char c) {
