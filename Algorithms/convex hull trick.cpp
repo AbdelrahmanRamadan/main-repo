@@ -1,4 +1,17 @@
-#include <bits/stdc++.h>
+/*
+ * Author: Abdelrahman Ramadan
+ * Problem: 5133 - Machine Works
+ * Judge: Live Archive
+ * Link: https://icpcarchive.ecs.baylor.edu/index.php?option=onlinejudge&page=show_problem&problem=3134
+ */
+
+#include <iostream>
+#include <algorithm>
+#include <set>
+#include <numeric>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 using namespace std;
 const int MAX = 100100;
 const long long inf = 1LL << 61;
